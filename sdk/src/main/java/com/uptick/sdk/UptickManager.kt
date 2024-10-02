@@ -22,7 +22,7 @@ class UptickManager {
     private var integrationId = ""
     private var flowId = ""
     private val coroutineExceptionHandler =
-        CoroutineExceptionHandler { coroutineContext, throwable ->
+        CoroutineExceptionHandler { _, throwable ->
             throwable.printStackTrace()
         }
     private var scope = CoroutineScope(coroutineExceptionHandler)
