@@ -11,7 +11,25 @@
 
 ## Installation
 
-To use the `UptickManager` class, simply copy the class into your Android project.
+To use the `UptickManager` class in your Android project, include the following in your project's `settings.gradle`:
+
+```gradle
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+
+and app level `build.gradle` file:
+
+```gradle
+dependencies {
+    implementation 'com.github.axeldeploy:uptick-android:0.0.2'
+}
+```
 
 ### Requirements
 - Android SDK with minimum API level 26 (Lollipop).
