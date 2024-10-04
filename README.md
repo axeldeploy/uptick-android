@@ -11,6 +11,8 @@
 
 ## Installation
 
+[![](https://jitpack.io/v/axeldeploy/uptick-android.svg)](https://jitpack.io/#axeldeploy/uptick-android)
+
 To use the `UptickManager` class in your Android project, include the following in your project's `settings.gradle`:
 
 ```gradle
