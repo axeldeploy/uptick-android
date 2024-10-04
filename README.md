@@ -32,7 +32,7 @@ dependencies {
 ```
 
 ### Requirements
-- Android SDK with minimum API level 26 (Lollipop).
+- Android SDK with minimum API level 26 (Oreo).
 - Kotlin support in your Android project.
 - Coroutines for asynchronous task management.
 
