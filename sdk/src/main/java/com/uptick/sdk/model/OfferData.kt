@@ -8,5 +8,7 @@ data class OfferData(
     val disclaimer:List<OfferItem>?,
     val actions:List<OfferItem>?,
     val footer:List<OfferItem>?,
-    val image:UptickImage?
+    val image:UptickImage?,
+    val offers:OfferDigits?,
+    val sponsored:List<OfferItem>?
 ):Serializable

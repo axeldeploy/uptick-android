@@ -8,5 +8,6 @@ data class AttributeText(
     val appearance: String?,
     val spacing: String?,
     val kind:String?,
-    val to:String?
+    val to:String?,
+    val url:String?
 ):Serializable

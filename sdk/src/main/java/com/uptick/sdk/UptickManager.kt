@@ -2,10 +2,13 @@ package com.uptick.sdk
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.cardview.widget.CardView
 import coil.load
@@ -31,6 +34,7 @@ class UptickManager {
     private var primaryColor = Color.parseColor("#5bb85d")
     private var secondaryColor = Color.parseColor("#efefef")
     private var bgColor = Color.parseColor("#4D000000")
+    private val lightGrey = Color.parseColor("#909090")
     private var placement = Placement.ORDER_CONFIRMATION
     var onError: (String) -> Unit = {}
 
@@ -143,46 +147,97 @@ class UptickManager {
                 // Header
                 offer.header?.forEach {
                     if (it.type == "text") {
-                        val headerTextView = android.widget.TextView(context).apply {
+                        val headerTextView = TextView(context).apply {
+                            includeFontPadding = false
                             text = it.text
-                            textSize = 24f
-                            setTextColor(Color.WHITE)
+                            setTextSize(it.attributes?.size)
+                            setTextColor(getTextColor(it.attributes?.appearance) ?: Color.WHITE)
+                            setTextStyle(it.attributes?.emphasis)
                             setBackgroundColor(primaryColor)
                             setPadding(16.dpToPx(), 16.dpToPx(), 16.dpToPx(), 16.dpToPx())
                         }
                         linearLayout.addView(headerTextView)
                     }
                 }
+                // Digits
+                offer.offers?.let { offerDigits ->
+                    val digitsContainer = LinearLayout(context).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        val params = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        params.gravity = Gravity.CENTER
+                        params.setMargins(0, 16.dpToPx(), 0, 16.dpToPx())
+                        layoutParams = params
+                        dividerDrawable = GradientDrawable().apply {
+                            setSize(8.dpToPx(), 8.dpToPx())
+                        }
+                        showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
+                    }
+                    for (i in offerDigits.start..offerDigits.size) {
+                        val digit = TextView(context).apply {
+                            width = 32.dpToPx()
+                            height = 32.dpToPx()
+                            text = i.toString()
+                            textSize = 12f
+                            setTextColor(Color.WHITE)
+                            background =
+                                createCircle(if (offerDigits.current == i) primaryColor else secondaryColor)
+                            gravity = Gravity.CENTER
+                        }
+                        digitsContainer.addView(digit)
+                    }
+                    linearLayout.addView(digitsContainer)
+                }
                 //image
                 offer.image?.let { image ->
                     val imageView = android.widget.ImageView(context).apply {
                         load(image.url)
-                        scaleType = android.widget.ImageView.ScaleType.CENTER_INSIDE
-                        setPadding(16.dpToPx(), 16.dpToPx(), 16.dpToPx(), 8.dpToPx())
-                        maxHeight = 56.dpToPx()
+                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                        setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
                     }
                     val params = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
+                        100.dpToPx(),
+                        100.dpToPx()
                     )
+                    params.gravity = Gravity.CENTER
                     linearLayout.addView(imageView, params)
+                }
+
+                //sponsored
+                offer.sponsored?.forEach {
+                    if (it.type == "text") {
+                        val sponsoredTextView = TextView(context).apply {
+                            includeFontPadding = false
+                            text = it.text
+                            setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
+                            setTextSize(it.attributes?.size)
+                            setTextColor(getTextColor(it.attributes?.appearance) ?: lightGrey)
+                            setTextStyle(it.attributes?.emphasis)
+                        }
+                        linearLayout.addView(sponsoredTextView)
+                    }
                 }
 
                 // content
                 var contentString: CharSequence? = null
                 offer.content?.forEach {
                     if (it.type == "text") {
-                        val text = android.text.SpannableString(it.text).apply {
-                            if (it.attributes?.emphasis == "bold") boldSpan(it.text)
+                        val mText = it.text.replace("\n", "")
+                        val text = android.text.SpannableString(mText).apply {
+                            if (it.attributes?.emphasis == "bold") boldSpan(mText)
                         }
                         contentString = android.text.TextUtils.concat(contentString ?: "", text)
                     }
                 }
                 contentString?.let {
-                    val contentTextView = android.widget.TextView(context).apply {
+                    val contentTextView = TextView(context).apply {
+                        includeFontPadding = false
+                        minHeight = 0
                         text = contentString
                         textSize = 16f
-                        setPadding(16.dpToPx(), 16.dpToPx(), 16.dpToPx(), 16.dpToPx())
+                        setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
                     }
                     linearLayout.addView(contentTextView)
                 }
@@ -198,15 +253,17 @@ class UptickManager {
                                     "#191919"
                                 )
                             )
-                            setPadding(16.dpToPx(), 8, 16.dpToPx(), 8)
                             setOnClickListener { buttonView ->
                                 item.attributes?.to?.let { link ->
+                                    if (link.contains("accept")) {
+                                        showOffer()
+                                        context.openLink(link)
+                                    }
+                                }
+                                item.attributes?.url?.let { link ->
                                     if (link.contains("reject")) {
                                         buttonView.isEnabled = false
                                         showOffer()
-                                    } else {
-                                        showOffer()
-                                        context.openLink(link)
                                     }
                                 }
                             }
@@ -215,7 +272,7 @@ class UptickManager {
                             LinearLayout.LayoutParams.MATCH_PARENT,
                             LinearLayout.LayoutParams.WRAP_CONTENT
                         )
-                        params.setMargins(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
+                        params.setMargins(16.dpToPx(), 0, 16.dpToPx(), 8.dpToPx())
                         linearLayout.addView(button, params)
                     }
                 }
@@ -223,10 +280,14 @@ class UptickManager {
                 // Disclaimer
                 offer.disclaimer?.forEach {
                     if (it.type == "text") {
-                        val disclaimerTextView = android.widget.TextView(context).apply {
-                            text = it.text
-                            textSize = 12f
-                            setTextColor(Color.GRAY)
+                        val disclaimerTextView = TextView(context).apply {
+                            gravity = Gravity.START
+                            includeFontPadding = false
+
+                            text = it.text.replace("\n", "")
+                            setTextSize(it.attributes?.size)
+                            setTextColor(getTextColor(it.attributes?.appearance) ?: Color.GRAY)
+                            setTextStyle(it.attributes?.emphasis)
                             setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
                         }
                         linearLayout.addView(disclaimerTextView)
@@ -237,9 +298,12 @@ class UptickManager {
                 offer.footer?.forEach {
                     if (it.type == "text") {
                         var footerString: CharSequence? = null
-                        val footerTextView = android.widget.TextView(context).apply {
-                            textSize = 10f
-                            setPadding(16.dpToPx(), 16.dpToPx(), 16.dpToPx(), 16.dpToPx())
+                        val footerTextView = TextView(context).apply {
+                            includeFontPadding = false
+                            setTextSize(it.attributes?.size)
+                            setTextColor(getTextColor(it.attributes?.appearance) ?: Color.GRAY)
+                            setTextStyle(it.attributes?.emphasis)
+                            setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 16.dpToPx())
                         }
                         it.children?.let { children ->
                             children.forEach {
@@ -263,9 +327,6 @@ class UptickManager {
                 container?.let {
                     container?.removeAllViews()
                     it.addView(parentContainer)
-                    response.links.nextOffer?.let { link ->
-                        offerViewed(link)
-                    }
                 }
             } ?: run {
                 container?.removeAllViews()
@@ -273,9 +334,43 @@ class UptickManager {
         }
     }
 
-    private fun offerViewed(url: String) {
-        scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            network.offerEvent(url)
+    private fun createCircle(color: Int): GradientDrawable {
+        val shape = GradientDrawable()
+        shape.shape = GradientDrawable.OVAL
+        shape.cornerRadii = floatArrayOf(100f, 100f, 100f, 100f, 100f, 100f, 100f, 100f)
+        shape.setColor(color)
+        return shape
+    }
+
+    private fun TextView.setTextStyle(emphasis: String?) {
+        emphasis?.let {
+            when (it) {
+                "bold" -> setTypeface(typeface, Typeface.BOLD)
+                "italic" -> setTypeface(typeface, Typeface.ITALIC)
+            }
         }
     }
+
+    private fun TextView.setTextSize(size: String?) {
+        textSize = when (size) {
+            "extraSmall" -> 10f
+            "small" -> 12f
+            "large" -> 24f
+            else -> 16f
+        }
+    }
+
+    private fun getTextColor(color: String?): Int? {
+        return when (color) {
+            "accent" -> Color.WHITE
+            "subdued" -> Color.parseColor("#585858")
+            else -> null
+        }
+    }
+
+    /* private fun offerViewed(url: String) {
+         scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+             network.offerEvent(url)
+         }
+     }*/
 }

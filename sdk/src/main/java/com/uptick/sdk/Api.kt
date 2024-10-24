@@ -20,7 +20,8 @@ interface Api {
     suspend fun nextOffer(
         @Path("integration_id") id: String,
         @Path("flow_id") flowId: String,
-        @Query("placement") placement: String
+        @Query("placement") placement: String,
+        @Query("ev") event: String = "offer_viewed"
     ): Response<UptickResponse>
 
     @GET
