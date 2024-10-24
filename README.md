@@ -29,7 +29,7 @@ and app level `build.gradle` file:
 
 ```gradle
 dependencies {
-    implementation 'com.github.axeldeploy:uptick-android:0.0.3'
+    implementation 'com.github.axeldeploy:uptick-android:$last_version'
 }
 ```
 
