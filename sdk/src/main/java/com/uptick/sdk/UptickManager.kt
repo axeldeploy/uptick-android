@@ -190,7 +190,7 @@ class UptickManager {
                             textSize = 12f
                             setTextColor(Color.WHITE)
                             background =
-                                createCircle(if (offerDigits.current == i) primaryColor else secondaryColor)
+                                createCircle(if (offerDigits.current >= i) primaryColor else secondaryColor)
                             gravity = Gravity.CENTER
                         }
                         digitsContainer.addView(digit)
@@ -231,7 +231,7 @@ class UptickManager {
                 var contentString: CharSequence? = null
                 offer.content?.forEach {
                     if (it.type == "text") {
-                        val mText = it.text.replace("\n", "")
+                        val mText = it.text
                         val text = android.text.SpannableString(mText).apply {
                             if (it.attributes?.emphasis == "bold") boldSpan(mText)
                         }
@@ -291,7 +291,7 @@ class UptickManager {
                             gravity = Gravity.START
                             includeFontPadding = false
 
-                            text = it.text.replace("\n", "")
+                            text = it.text
                             setTextSize(it.attributes?.size)
                             setTextColor(getTextColor(it.attributes?.appearance) ?: Color.GRAY)
                             setTextStyle(it.attributes?.emphasis)
