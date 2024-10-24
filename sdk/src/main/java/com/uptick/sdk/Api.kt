@@ -13,7 +13,11 @@ interface Api {
     @GET("v1/places/{integration_id}/flows/new")
     suspend fun newFlow(
         @Path("integration_id") id: String,
-        @Query("placement") placement: String
+        @Query("placement") placement: String,
+        @Query("first_name") firstName: String? = null,
+        @Query("country_code") countryCode: String? = null,
+        @Query("total_price") totalPrice: String? = null,
+        @Query("shipping_price") shippingPrice: String? = null
     ): Response<UptickResponse>
 
     @GET("v1/places/{integration_id}/flows/{flow_id}/offers/new")

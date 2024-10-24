@@ -56,7 +56,11 @@ class UptickManager {
         context: Context,
         container: FrameLayout,
         integrationId: String,
-        placement: Placement = Placement.ORDER_CONFIRMATION
+        placement: Placement = Placement.ORDER_CONFIRMATION,
+        firstName: String? = null,
+        countryCode: String? = null,
+        totalPrice: String? = null,
+        shippingPrice: String? = null
     ) {
         this.context = context
         this.container = container
@@ -64,7 +68,10 @@ class UptickManager {
         this.placement = placement
 
         scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            val flow = network.newFlow(integrationId, this@UptickManager.placement.value)
+            val flow = network.newFlow(
+                integrationId, this@UptickManager.placement.value,
+                firstName, countryCode, totalPrice, shippingPrice
+            )
             if (flow.isSuccessful) {
                 flow.body()?.data?.let {
                     it.find { it.type == "flow" }?.let {
