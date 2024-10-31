@@ -23,7 +23,20 @@
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="16dp"
             android:hint="Integration ID"
+            android:maxLines="1"
+            android:inputType="text"
             android:text="0bf6f068-6bf5-49f1-a6bc-822eee7d4db3"
+            app:layout_constraintTop_toTopOf="parent" />
+        <EditText
+            android:id="@+id/first_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:inputType="text"
+            android:layout_marginHorizontal="16dp"
+            android:imeOptions="actionDone"
+            android:layout_marginTop="8dp"
+            android:hint="First name"
             app:layout_constraintTop_toTopOf="parent" />
 
         <RadioGroup
