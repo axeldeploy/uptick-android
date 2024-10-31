@@ -28,7 +28,8 @@ class MainActivity : AppCompatActivity() {
         uptickManager.initiateView(
             this,
             findViewById(R.id.adView),
-            "0bf6f068-6bf5-49f1-a6bc-822eee7d4db3"
+            "0bf6f068-6bf5-49f1-a6bc-822eee7d4db3",
+            optionalParams = mapOf("first_name" to "John")
         )
     }
 }

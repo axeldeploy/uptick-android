@@ -6,6 +6,7 @@ import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.QueryMap
 import retrofit2.http.Url
 
 interface Api {
@@ -14,10 +15,7 @@ interface Api {
     suspend fun newFlow(
         @Path("integration_id") id: String,
         @Query("placement") placement: String,
-        @Query("first_name") firstName: String? = null,
-        @Query("country_code") countryCode: String? = null,
-        @Query("total_price") totalPrice: String? = null,
-        @Query("shipping_price") shippingPrice: String? = null
+        @QueryMap options: Map<String, String>
     ): Response<UptickResponse>
 
     @GET("v1/places/{integration_id}/flows/{flow_id}/offers/new")
@@ -25,7 +23,8 @@ interface Api {
         @Path("integration_id") id: String,
         @Path("flow_id") flowId: String,
         @Query("placement") placement: String,
-        @Query("ev") event: String = "offer_viewed"
+        @Query("ev") event: String = "offer_viewed",
+        @QueryMap options: Map<String, String>
     ): Response<UptickResponse>
 
     @GET

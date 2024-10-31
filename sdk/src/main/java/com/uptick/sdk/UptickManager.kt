@@ -36,6 +36,7 @@ class UptickManager {
     private var bgColor = Color.parseColor("#4D000000")
     private val lightGrey = Color.parseColor("#909090")
     private var placement = Placement.ORDER_CONFIRMATION
+    private var optionalParams = mapOf<String,String>()
     var onError: (String) -> Unit = {}
 
     fun setPrimaryColor(@ColorInt color: Int) {
@@ -57,20 +58,18 @@ class UptickManager {
         container: FrameLayout,
         integrationId: String,
         placement: Placement = Placement.ORDER_CONFIRMATION,
-        firstName: String? = null,
-        countryCode: String? = null,
-        totalPrice: String? = null,
-        shippingPrice: String? = null
+        optionalParams:Map<String,String> = mapOf()
     ) {
         this.context = context
         this.container = container
         this.integrationId = integrationId
         this.placement = placement
+        this.optionalParams = optionalParams
 
         scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             val flow = network.newFlow(
                 integrationId, this@UptickManager.placement.value,
-                firstName, countryCode, totalPrice, shippingPrice
+                optionalParams
             )
             if (flow.isSuccessful) {
                 flow.body()?.data?.let {
@@ -95,7 +94,7 @@ class UptickManager {
 
     private fun showOffer() {
         scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            val response = network.nextOffer(integrationId, flowId, placement.value)
+            val response = network.nextOffer(integrationId, flowId, placement.value, options = optionalParams)
             if (response.isSuccessful) response.body()?.let {
                 showOfferView(it)
             } else {
@@ -211,7 +210,21 @@ class UptickManager {
                     params.gravity = Gravity.CENTER
                     linearLayout.addView(imageView, params)
                 }
+                //personalization
+                offer.personalization?.forEach {
+                    if (it.type == "text") {
+                        val disclaimerTextView = TextView(context).apply {
+                            gravity = Gravity.START
+                            includeFontPadding = false
 
+                            text = it.text
+                            setTextSize(it.attributes?.size)
+                            setTextStyle(it.attributes?.emphasis)
+                            setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
+                        }
+                        linearLayout.addView(disclaimerTextView)
+                    }
+                }
                 //sponsored
                 offer.sponsored?.forEach {
                     if (it.type == "text") {
