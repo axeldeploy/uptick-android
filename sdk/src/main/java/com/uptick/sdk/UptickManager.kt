@@ -1,12 +1,14 @@
 package com.uptick.sdk
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.ColorInt
@@ -36,7 +38,7 @@ class UptickManager {
     private var bgColor = Color.parseColor("#4D000000")
     private val lightGrey = Color.parseColor("#909090")
     private var placement = Placement.ORDER_CONFIRMATION
-    private var optionalParams = mapOf<String,String>()
+    private var optionalParams = mapOf<String, String>()
     var onError: (String) -> Unit = {}
 
     fun setPrimaryColor(@ColorInt color: Int) {
@@ -58,7 +60,7 @@ class UptickManager {
         container: FrameLayout,
         integrationId: String,
         placement: Placement = Placement.ORDER_CONFIRMATION,
-        optionalParams:Map<String,String> = mapOf()
+        optionalParams: Map<String, String> = mapOf()
     ) {
         this.context = context
         this.container = container
@@ -94,7 +96,8 @@ class UptickManager {
 
     private fun showOffer() {
         scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            val response = network.nextOffer(integrationId, flowId, placement.value, options = optionalParams)
+            val response =
+                network.nextOffer(integrationId, flowId, placement.value, options = optionalParams)
             if (response.isSuccessful) response.body()?.let {
                 showOfferView(it)
             } else {
@@ -123,22 +126,30 @@ class UptickManager {
     private fun showOfferView(response: UptickResponse) {
         scope.launch(Dispatchers.Main + coroutineExceptionHandler) {
             response.data.find { it.type == "offer" }?.attributes?.let { offer ->
+                val isTablet = isTablet(context!!)
+                val horizontalPadding = horizontalPadding(isTablet)
                 val parentContainer = FrameLayout(context!!).apply {
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
-                    setBackgroundColor(bgColor)
+                    setBackgroundColor(if (placement == Placement.ORDER_CONFIRMATION) bgColor else Color.TRANSPARENT)
                 }
                 val cardView = CardView(context!!).apply {
                     layoutParams = FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT
                     ).apply {
-                        gravity = Gravity.CENTER
-                        setMargins(16.dpToPx(), 0, 16.dpToPx(), 0)
+                        gravity = if (placement==Placement.ORDER_CONFIRMATION) Gravity.CENTER else Gravity.TOP
+                        setMargins(
+                            if (placement == Placement.ORDER_CONFIRMATION) 16.dpToPx() else 0,
+                            0,
+                            if (placement == Placement.ORDER_CONFIRMATION) 16.dpToPx() else 0,
+                            0
+                        )
                     }
-                    cardElevation = 8.dpToPx().toFloat()
-                    setCardBackgroundColor(Color.WHITE)
+                    cardElevation =
+                        if (placement == Placement.ORDER_CONFIRMATION) 8.dpToPx().toFloat() else 0f
+                    setCardBackgroundColor(if (placement==Placement.ORDER_CONFIRMATION) Color.WHITE else Color.TRANSPARENT)
                 }
                 val linearLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
@@ -160,7 +171,12 @@ class UptickManager {
                             setTextColor(getTextColor(it.attributes?.appearance) ?: Color.WHITE)
                             setTextStyle(it.attributes?.emphasis)
                             setBackgroundColor(primaryColor)
-                            setPadding(16.dpToPx(), 16.dpToPx(), 16.dpToPx(), 16.dpToPx())
+                            setPadding(
+                                horizontalPadding,
+                                16.dpToPx(),
+                                horizontalPadding,
+                                16.dpToPx()
+                            )
                         }
                         linearLayout.addView(headerTextView)
                     }
@@ -197,18 +213,15 @@ class UptickManager {
                     linearLayout.addView(digitsContainer)
                 }
                 //image
+                var imageView: ImageView? = null
                 offer.image?.let { image ->
-                    val imageView = android.widget.ImageView(context).apply {
+                    imageView = ImageView(context).apply {
                         load(image.url)
                         scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-                        setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
+                        setPadding(horizontalPadding, 8.dpToPx(), horizontalPadding, 8.dpToPx())
                     }
-                    val params = LinearLayout.LayoutParams(
-                        100.dpToPx(),
-                        100.dpToPx()
-                    )
-                    params.gravity = Gravity.CENTER
-                    linearLayout.addView(imageView, params)
+
+                    //linearLayout.addView(imageView, params)
                 }
                 //personalization
                 offer.personalization?.forEach {
@@ -220,10 +233,22 @@ class UptickManager {
                             text = it.text
                             setTextSize(it.attributes?.size)
                             setTextStyle(it.attributes?.emphasis)
-                            setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
+                            setPadding(horizontalPadding, 8.dpToPx(), horizontalPadding, 8.dpToPx())
                         }
                         linearLayout.addView(disclaimerTextView)
                     }
+                }
+
+                val contentContainer = LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutParams = if (isTablet) LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    ) else LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
                 }
                 //sponsored
                 offer.sponsored?.forEach {
@@ -231,12 +256,12 @@ class UptickManager {
                         val sponsoredTextView = TextView(context).apply {
                             includeFontPadding = false
                             text = it.text
-                            setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
+                            setPadding(horizontalPadding, 8.dpToPx(), horizontalPadding, 8.dpToPx())
                             setTextSize(it.attributes?.size)
                             setTextColor(getTextColor(it.attributes?.appearance) ?: lightGrey)
                             setTextStyle(it.attributes?.emphasis)
                         }
-                        linearLayout.addView(sponsoredTextView)
+                        contentContainer.addView(sponsoredTextView)
                     }
                 }
 
@@ -257,44 +282,59 @@ class UptickManager {
                         minHeight = 0
                         text = contentString
                         textSize = 16f
-                        setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
+                        setPadding(horizontalPadding, 8.dpToPx(), horizontalPadding, 8.dpToPx())
                     }
-                    linearLayout.addView(contentTextView)
+                    contentContainer.addView(contentTextView)
                 }
 
                 // Actions
-                offer.actions?.forEach { item ->
-                    if (item.type == "button") {
-                        val button = android.widget.Button(context).apply {
-                            text = item.text
-                            setBackgroundColor(if (item.attributes?.kind == "primary") primaryColor else secondaryColor)
-                            setTextColor(
-                                if (item.attributes?.kind == "primary") Color.WHITE else Color.parseColor(
-                                    "#191919"
+                val actionsContainer = LinearLayout(context).apply {
+                    orientation = if (isTablet) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    dividerDrawable = GradientDrawable().apply {
+                        setSize(16.dpToPx(), 16.dpToPx())
+                    }
+                    showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
+                    setPadding(horizontalPadding, 8.dpToPx(), horizontalPadding, 8.dpToPx())
+                }
+                offer.actions?.let {
+                    it.forEach { item ->
+                        if (item.type == "button") {
+                            val button = android.widget.Button(context).apply {
+                                text = item.text
+                                setBackgroundColor(if (item.attributes?.kind == "primary") primaryColor else secondaryColor)
+                                setTextColor(
+                                    if (item.attributes?.kind == "primary") Color.WHITE else Color.parseColor(
+                                        "#191919"
+                                    )
                                 )
-                            )
-                            setOnClickListener { buttonView ->
-                                item.attributes?.to?.let { link ->
-                                    if (link.contains("accept")) {
-                                        showOffer()
-                                        context.openLink(link)
+                                setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
+                                setOnClickListener { buttonView ->
+                                    item.attributes?.to?.let { link ->
+                                        if (link.contains("accept")) {
+                                            showOffer()
+                                            context.openLink(link)
+                                        }
                                     }
-                                }
-                                item.attributes?.url?.let { link ->
-                                    if (link.contains("reject")) {
-                                        buttonView.isEnabled = false
-                                        showOffer()
+                                    item.attributes?.url?.let { link ->
+                                        if (link.contains("reject")) {
+                                            buttonView.isEnabled = false
+                                            showOffer()
+                                        }
                                     }
                                 }
                             }
+                            val params = LinearLayout.LayoutParams(
+                                if (isTablet) LinearLayout.LayoutParams.WRAP_CONTENT else LinearLayout.LayoutParams.MATCH_PARENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT
+                            )
+                            actionsContainer.addView(button, params)
                         }
-                        val params = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        )
-                        params.setMargins(16.dpToPx(), 0, 16.dpToPx(), 8.dpToPx())
-                        linearLayout.addView(button, params)
                     }
+                    contentContainer.addView(actionsContainer)
                 }
 
                 // Disclaimer
@@ -308,11 +348,41 @@ class UptickManager {
                             setTextSize(it.attributes?.size)
                             setTextColor(getTextColor(it.attributes?.appearance) ?: Color.GRAY)
                             setTextStyle(it.attributes?.emphasis)
-                            setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
+                            setPadding(horizontalPadding, 8.dpToPx(), horizontalPadding, 8.dpToPx())
                         }
-                        linearLayout.addView(disclaimerTextView)
+                        contentContainer.addView(disclaimerTextView)
                     }
                 }
+                val orientationContainer = LinearLayout(context).apply {
+                    orientation = if (isTablet) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                }
+                if (isTablet) {
+                    orientationContainer.addView(contentContainer)
+                    imageView?.let {
+                        orientationContainer.addView(imageView, LinearLayout.LayoutParams(
+                            150.dpToPx(),
+                            150.dpToPx()
+                        ).apply {
+                            gravity = Gravity.TOP and Gravity.START
+                            setMargins(0, 0, horizontalPadding, 0)
+                        })
+                    }
+                } else {
+                    imageView?.let {
+                        orientationContainer.addView(imageView, LinearLayout.LayoutParams(
+                            100.dpToPx(),
+                            100.dpToPx()
+                        ).apply {
+                            gravity = Gravity.CENTER
+                        })
+                    }
+                    orientationContainer.addView(contentContainer)
+                }
+                linearLayout.addView(orientationContainer)
 
                 // Footer
                 offer.footer?.forEach {
@@ -323,7 +393,12 @@ class UptickManager {
                             setTextSize(it.attributes?.size)
                             setTextColor(getTextColor(it.attributes?.appearance) ?: Color.GRAY)
                             setTextStyle(it.attributes?.emphasis)
-                            setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 16.dpToPx())
+                            setPadding(
+                                horizontalPadding,
+                                8.dpToPx(),
+                                horizontalPadding,
+                                16.dpToPx()
+                            )
                         }
                         it.children?.let { children ->
                             children.forEach {
@@ -387,6 +462,14 @@ class UptickManager {
             else -> null
         }
     }
+
+    private fun isTablet(context: Context): Boolean {
+        return (context.resources.configuration.screenLayout
+                and Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE
+    }
+
+    private fun horizontalPadding(isTablet: Boolean): Int =
+        if (isTablet) 32.dpToPx() else 16.dpToPx()
 
     /* private fun offerViewed(url: String) {
          scope.launch(Dispatchers.IO + coroutineExceptionHandler) {

@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.uptick.sdk.UptickManager
+import com.uptick.sdk.model.Placement
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,6 +30,7 @@ class MainActivity : AppCompatActivity() {
             this,
             findViewById(R.id.adView),
             "0bf6f068-6bf5-49f1-a6bc-822eee7d4db3",
+            placement = Placement.ORDER_STATUS,
             optionalParams = mapOf("first_name" to "John")
         )
     }
