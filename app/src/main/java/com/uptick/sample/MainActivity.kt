@@ -1,6 +1,11 @@
 package com.uptick.sample
 
 import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -22,16 +27,25 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        val adView = findViewById<FrameLayout>(R.id.adView)
+        val adViewInline = findViewById<FrameLayout>(R.id.adView_inline)
+        val proceedButton = findViewById<Button>(R.id.proceed)
+        val placementContainer = findViewById<RadioGroup>(R.id.placement)
+        val integrationIdText = findViewById<EditText>(R.id.integration_id)
         val uptickManager = UptickManager()
         uptickManager.onError = {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }
-        uptickManager.initiateView(
-            this,
-            findViewById(R.id.adView),
-            "0bf6f068-6bf5-49f1-a6bc-822eee7d4db3",
-            placement = Placement.ORDER_STATUS,
-            optionalParams = mapOf("first_name" to "John")
-        )
+        proceedButton.setOnClickListener {
+            uptickManager.initiateView(
+                this,
+                if (placementContainer.checkedRadioButtonId==R.id.order_confirmation) adView else adViewInline,
+                integrationIdText.text.toString(),
+                placement = when(placementContainer.checkedRadioButtonId){
+                    R.id.order_confirmation->Placement.ORDER_CONFIRMATION
+                    R.id.order_status->Placement.ORDER_STATUS
+                    else->Placement.SURVEY
+                },)
+        }
     }
 }
