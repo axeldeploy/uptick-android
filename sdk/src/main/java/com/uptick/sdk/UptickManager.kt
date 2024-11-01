@@ -238,7 +238,7 @@ class UptickManager {
                         val disclaimerTextView = TextView(context).apply {
                             gravity = Gravity.START
                             includeFontPadding = false
-
+                            setTextColor(getTextColor(it.attributes?.appearance) ?:Color.parseColor("#191919"))
                             text = it.text
                             setTextSize(it.attributes?.size)
                             setTextStyle(it.attributes?.emphasis)
@@ -291,6 +291,7 @@ class UptickManager {
                         minHeight = 0
                         text = contentString
                         textSize = 16f
+                        setTextColor(Color.parseColor("#191919"))
                         setPadding(horizontalPadding, 8.dpToPx(), horizontalPadding, 8.dpToPx())
                     }
                     contentContainer.addView(contentTextView)
