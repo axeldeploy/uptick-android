@@ -18,18 +18,21 @@ interface Api {
         @QueryMap options: Map<String, String>
     ): Response<UptickResponse>
 
-    @GET("v1/places/{integration_id}/flows/{flow_id}/offers/new")
+   /* @GET("v1/places/{integration_id}/flows/{flow_id}/offers/new")
     suspend fun nextOffer(
         @Path("integration_id") id: String,
         @Path("flow_id") flowId: String,
         @Query("placement") placement: String,
         @Query("ev") event: String = "offer_viewed",
         @QueryMap options: Map<String, String>
-    ): Response<UptickResponse>
+    ): Response<UptickResponse>*/
+
 
     @GET
-    suspend fun offerEvent(
+    suspend fun nextOffer(
         @Url url: String,
-        @Query("ev") event: String = "offer_viewed"
-    ): Response<ResponseBody>
+        @Query("placement") placement: String,
+        @Query("ev") event: String = "offer_viewed",
+        @QueryMap options: Map<String, String>
+    ): Response<UptickResponse>
 }

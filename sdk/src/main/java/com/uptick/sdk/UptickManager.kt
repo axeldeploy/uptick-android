@@ -74,10 +74,10 @@ class UptickManager {
                 optionalParams
             )
             if (flow.isSuccessful) {
-                flow.body()?.data?.let {
-                    it.find { it.type == "flow" }?.let {
+                flow.body()?.data?.let { response ->
+                    response.find { it.type == "flow" }?.let {
                         flowId = it.id
-                        showOffer()
+                        handleNextOffer(flow.body()?.links?.nextOffer)
                     }
                 }
             } else {
@@ -94,10 +94,10 @@ class UptickManager {
         }
     }
 
-    private fun showOffer() {
+    private fun showOffer(url: String) {
         scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             val response =
-                network.nextOffer(integrationId, flowId, placement.value, options = optionalParams)
+                network.nextOffer(url = url, placement = placement.value, options = optionalParams)
             if (response.isSuccessful) response.body()?.let {
                 showOfferView(it)
             } else {
@@ -114,6 +114,14 @@ class UptickManager {
                     }
                 }
             }
+        }
+    }
+
+    private fun handleNextOffer(url: String?) {
+        url?.let {
+            showOffer(it)
+        } ?: kotlin.run {
+            container?.removeAllViews()
         }
     }
 
@@ -139,7 +147,8 @@ class UptickManager {
                     layoutParams = FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT
                     ).apply {
-                        gravity = if (placement==Placement.ORDER_CONFIRMATION) Gravity.CENTER else Gravity.TOP
+                        gravity =
+                            if (placement == Placement.ORDER_CONFIRMATION) Gravity.CENTER else Gravity.TOP
                         setMargins(
                             if (placement == Placement.ORDER_CONFIRMATION) 16.dpToPx() else 0,
                             0,
@@ -149,7 +158,7 @@ class UptickManager {
                     }
                     cardElevation =
                         if (placement == Placement.ORDER_CONFIRMATION) 8.dpToPx().toFloat() else 0f
-                    setCardBackgroundColor(if (placement==Placement.ORDER_CONFIRMATION) Color.WHITE else Color.TRANSPARENT)
+                    setCardBackgroundColor(if (placement == Placement.ORDER_CONFIRMATION) Color.WHITE else Color.TRANSPARENT)
                 }
                 val linearLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
@@ -313,17 +322,15 @@ class UptickManager {
                                 )
                                 setPadding(16.dpToPx(), 8.dpToPx(), 16.dpToPx(), 8.dpToPx())
                                 setOnClickListener { buttonView ->
-                                    item.attributes?.to?.let { link ->
-                                        if (link.contains("accept")) {
-                                            showOffer()
+                                    if (item.attributes?.kind == "primary") {
+                                        item.attributes.to?.let { link ->
+                                            buttonView.isEnabled = false
+                                            handleNextOffer(response.links.nextOffer)
                                             context.openLink(link)
                                         }
-                                    }
-                                    item.attributes?.url?.let { link ->
-                                        if (link.contains("reject")) {
-                                            buttonView.isEnabled = false
-                                            showOffer()
-                                        }
+                                    } else {
+                                        buttonView.isEnabled = false
+                                        handleNextOffer(response.links.nextOffer)
                                     }
                                 }
                             }
@@ -470,10 +477,4 @@ class UptickManager {
 
     private fun horizontalPadding(isTablet: Boolean): Int =
         if (isTablet) 32.dpToPx() else 16.dpToPx()
-
-    /* private fun offerViewed(url: String) {
-         scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-             network.offerEvent(url)
-         }
-     }*/
 }
