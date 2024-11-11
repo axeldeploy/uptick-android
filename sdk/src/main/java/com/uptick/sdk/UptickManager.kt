@@ -38,7 +38,7 @@ class UptickManager {
     private var bgColor = Color.parseColor("#4D000000")
     private val lightGrey = Color.parseColor("#909090")
     private var placement = Placement.ORDER_CONFIRMATION
-    private var optionalParams = mapOf<String, String>()
+    private var optionalParams = mutableMapOf<String, String>()
     var onError: (String) -> Unit = {}
 
     fun setPrimaryColor(@ColorInt color: Int) {
@@ -66,7 +66,7 @@ class UptickManager {
         this.container = container
         this.integrationId = integrationId
         this.placement = placement
-        this.optionalParams = optionalParams
+        this.optionalParams = optionalParams.toMutableMap()
 
         scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             val flow = network.newFlow(
@@ -76,6 +76,8 @@ class UptickManager {
             if (flow.isSuccessful) {
                 flow.body()?.data?.let { response ->
                     response.find { it.type == "flow" }?.let {
+                        if (it.personalization == false)
+                            this@UptickManager.optionalParams.remove("first_name")
                         flowId = it.id
                         handleNextOffer(flow.body()?.links?.nextOffer)
                     }
@@ -238,7 +240,10 @@ class UptickManager {
                         val disclaimerTextView = TextView(context).apply {
                             gravity = Gravity.START
                             includeFontPadding = false
-                            setTextColor(getTextColor(it.attributes?.appearance) ?:Color.parseColor("#191919"))
+                            setTextColor(
+                                getTextColor(it.attributes?.appearance)
+                                    ?: Color.parseColor("#191919")
+                            )
                             text = it.text
                             setTextSize(it.attributes?.size)
                             setTextStyle(it.attributes?.emphasis)
