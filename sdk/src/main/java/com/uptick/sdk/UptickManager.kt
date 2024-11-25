@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -39,6 +40,7 @@ class UptickManager {
     private val lightGrey = Color.parseColor("#909090")
     private var placement = Placement.ORDER_CONFIRMATION
     private var optionalParams = mutableMapOf<String, String>()
+    private var renderX = false
     var onError: (String) -> Unit = {}
 
     fun setPrimaryColor(@ColorInt color: Int) {
@@ -79,6 +81,11 @@ class UptickManager {
                         if (it.personalization == false)
                             this@UptickManager.optionalParams.remove("first_name")
                         flowId = it.id
+                        it.highlightColor?.let { highlightColor ->
+                            primaryColor = Color.parseColor(highlightColor)
+                        }
+                        renderX = it.renderX ?: false
+                        it.renderType
                         handleNextOffer(flow.body()?.links?.nextOffer)
                     }
                 }
@@ -173,24 +180,55 @@ class UptickManager {
                 parentContainer.addView(cardView)
 
                 // Header
-                offer.header?.forEach {
-                    if (it.type == "text") {
-                        val headerTextView = TextView(context).apply {
-                            includeFontPadding = false
-                            text = it.text
-                            setTextSize(it.attributes?.size)
-                            setTextColor(getTextColor(it.attributes?.appearance) ?: Color.WHITE)
-                            setTextStyle(it.attributes?.emphasis)
-                            setBackgroundColor(primaryColor)
-                            setPadding(
-                                horizontalPadding,
-                                16.dpToPx(),
-                                horizontalPadding,
-                                16.dpToPx()
+                offer.header?.let { header ->
+                    val headerContainer = LinearLayout(context).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        setBackgroundColor(primaryColor)
+                        gravity = Gravity.CENTER_VERTICAL
+                        dividerDrawable = GradientDrawable().apply {
+                            setSize(8.dpToPx(), 8.dpToPx())
+                        }
+                        showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
+                        setPadding(
+                            horizontalPadding,
+                            8.dpToPx(),
+                            horizontalPadding,
+                            8.dpToPx()
+                        )
+                    }
+                    header.forEach {
+
+                        if (it.type == "text") {
+                            val headerTextView = TextView(context).apply {
+                                includeFontPadding = false
+                                text = it.text
+                                setTextSize(it.attributes?.size)
+                                setTextColor(getTextColor(it.attributes?.appearance) ?: Color.WHITE)
+                                setTextStyle(it.attributes?.emphasis)
+                            }
+                            headerContainer.addView(
+                                headerTextView, LinearLayout.LayoutParams(
+                                    0,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    1.0f
+                                )
                             )
                         }
-                        linearLayout.addView(headerTextView)
                     }
+                    if (renderX){
+                        headerContainer.addView(ImageButton(context).apply {
+                            setImageResource(R.drawable.ic_close)
+                            setBackgroundColor(android.R.attr.actionBarItemBackground)
+                            setOnClickListener {
+                                container?.removeAllViews()
+                            }
+                        })
+                    }
+                    linearLayout.addView(headerContainer)
                 }
                 // Digits
                 offer.offers?.let { offerDigits ->
