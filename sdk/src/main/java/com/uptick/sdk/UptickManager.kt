@@ -6,13 +6,11 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.annotation.ColorInt
 import androidx.cardview.widget.CardView
 import coil.load
 import com.uptick.sdk.model.Placement
@@ -41,19 +39,8 @@ class UptickManager {
     private var placement = Placement.ORDER_CONFIRMATION
     private var optionalParams = mutableMapOf<String, String>()
     private var renderX = false
+    private var renderType: String? = null
     var onError: (String) -> Unit = {}
-
-    fun setPrimaryColor(@ColorInt color: Int) {
-        primaryColor = color
-    }
-
-    fun setSecondaryColor(@ColorInt color: Int) {
-        secondaryColor = color
-    }
-
-    fun setBgColor(@ColorInt color: Int) {
-        bgColor = color
-    }
 
     private var container: FrameLayout? = null
     private var context: Context? = null
@@ -85,7 +72,7 @@ class UptickManager {
                             primaryColor = Color.parseColor(highlightColor)
                         }
                         renderX = it.renderX ?: false
-                        it.renderType
+                        renderType = it.renderType
                         handleNextOffer(flow.body()?.links?.nextOffer)
                     }
                 }
@@ -145,29 +132,23 @@ class UptickManager {
             response.data.find { it.type == "offer" }?.attributes?.let { offer ->
                 val isTablet = isTablet(context!!)
                 val horizontalPadding = horizontalPadding(isTablet)
-                val parentContainer = FrameLayout(context!!).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    setBackgroundColor(if (placement == Placement.ORDER_CONFIRMATION) bgColor else Color.TRANSPARENT)
-                }
+
                 val cardView = CardView(context!!).apply {
                     layoutParams = FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT
                     ).apply {
                         gravity =
-                            if (placement == Placement.ORDER_CONFIRMATION) Gravity.CENTER else Gravity.TOP
+                            if (renderType == "popup") Gravity.CENTER else Gravity.TOP
                         setMargins(
-                            if (placement == Placement.ORDER_CONFIRMATION) 16.dpToPx() else 0,
+                            if (renderType == "popup") 16.dpToPx() else 0,
                             0,
-                            if (placement == Placement.ORDER_CONFIRMATION) 16.dpToPx() else 0,
+                            if (renderType == "popup") 16.dpToPx() else 0,
                             0
                         )
                     }
                     cardElevation =
-                        if (placement == Placement.ORDER_CONFIRMATION) 8.dpToPx().toFloat() else 0f
-                    setCardBackgroundColor(if (placement == Placement.ORDER_CONFIRMATION) Color.WHITE else Color.TRANSPARENT)
+                        if (renderType == "popup") 8.dpToPx().toFloat() else 0f
+                    setCardBackgroundColor(if (renderType == "popup") Color.WHITE else Color.TRANSPARENT)
                 }
                 val linearLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
@@ -177,7 +158,6 @@ class UptickManager {
                     )
                 }
                 cardView.addView(linearLayout)
-                parentContainer.addView(cardView)
 
                 // Header
                 offer.header?.let { header ->
@@ -219,7 +199,7 @@ class UptickManager {
                             )
                         }
                     }
-                    if (renderX){
+                    if (renderX) {
                         headerContainer.addView(ImageButton(context).apply {
                             setImageResource(R.drawable.ic_close)
                             setBackgroundColor(android.R.attr.actionBarItemBackground)
@@ -472,7 +452,7 @@ class UptickManager {
                 }
                 container?.let {
                     container?.removeAllViews()
-                    it.addView(parentContainer)
+                    it.addView(cardView)
                 }
             } ?: run {
                 container?.removeAllViews()
