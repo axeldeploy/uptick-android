@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -41,6 +42,7 @@ class UptickManager {
     private var renderX = false
     private var renderType: String? = null
     var onError: (String) -> Unit = {}
+    var onRenderTypeReceived: (String) -> Unit = {}
 
     private var container: FrameLayout? = null
     private var context: Context? = null
@@ -73,6 +75,9 @@ class UptickManager {
                         }
                         renderX = it.renderX ?: false
                         renderType = it.renderType
+                        it.renderType?.let{
+                            handleRenderType(it)
+                        }
                         handleNextOffer(flow.body()?.links?.nextOffer)
                     }
                 }
@@ -132,7 +137,13 @@ class UptickManager {
             response.data.find { it.type == "offer" }?.attributes?.let { offer ->
                 val isTablet = isTablet(context!!)
                 val horizontalPadding = horizontalPadding(isTablet)
-
+                val parentContainer = FrameLayout(context!!).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    setBackgroundColor(if (renderType == "popup") bgColor else Color.TRANSPARENT)
+                }
                 val cardView = CardView(context!!).apply {
                     layoutParams = FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT
@@ -158,6 +169,7 @@ class UptickManager {
                     )
                 }
                 cardView.addView(linearLayout)
+                parentContainer.addView(cardView)
 
                 // Header
                 offer.header?.let { header ->
@@ -452,7 +464,7 @@ class UptickManager {
                 }
                 container?.let {
                     container?.removeAllViews()
-                    it.addView(cardView)
+                    it.addView(parentContainer)
                 }
             } ?: run {
                 container?.removeAllViews()
@@ -501,4 +513,10 @@ class UptickManager {
 
     private fun horizontalPadding(isTablet: Boolean): Int =
         if (isTablet) 32.dpToPx() else 16.dpToPx()
+
+    private fun handleRenderType(renderType: String) {
+        scope.launch(Dispatchers.Main+coroutineExceptionHandler) {
+            onRenderTypeReceived(renderType)
+        }
+    }
 }

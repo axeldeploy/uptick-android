@@ -1,6 +1,7 @@
 package com.uptick.sample
 
 import android.os.Bundle
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
@@ -36,10 +37,20 @@ class MainActivity : AppCompatActivity() {
         uptickManager.onError = {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }
+
+        val uptickView= FrameLayout(this)
+        uptickManager.onRenderTypeReceived = {
+            (uptickView.parent as ViewGroup?)?.removeView(uptickView)
+            if (it == "popup") {
+                adView.addView(uptickView)
+            } else {
+                adViewInline.addView(uptickView)
+            }
+        }
         proceedButton.setOnClickListener {
             uptickManager.initiateView(
                 this,
-                if (placementContainer.checkedRadioButtonId == R.id.order_confirmation) adView else adViewInline,
+                uptickView ,
                 integrationIdText.text.toString(),
                 placement = when (placementContainer.checkedRadioButtonId) {
                     R.id.order_confirmation -> Placement.ORDER_CONFIRMATION
