@@ -27,7 +27,7 @@ fun Context.openLink(link: String) {
     startActivity(browserIntent)
 }
 
-fun Spannable.clickableSpan(text: String, on: () -> Unit) {
+fun Spannable.clickableSpan(text: String, color: Int, underline: Boolean = true, on: () -> Unit) {
     val start = this.indexOf(text)
     this[start..start + text.length] = object : ClickableSpan() {
         override fun onClick(p0: View) {
@@ -36,8 +36,8 @@ fun Spannable.clickableSpan(text: String, on: () -> Unit) {
 
         override fun updateDrawState(ds: TextPaint) {
             super.updateDrawState(ds)
-            ds.isUnderlineText = true
-
+            ds.isUnderlineText = underline
+            ds.color = color
         }
     }
 }

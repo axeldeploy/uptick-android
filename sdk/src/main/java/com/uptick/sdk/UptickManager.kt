@@ -75,7 +75,7 @@ class UptickManager {
                         }
                         renderX = it.renderX ?: false
                         renderType = it.renderType
-                        it.renderType?.let{
+                        it.renderType?.let {
                             handleRenderType(it)
                         }
                         handleNextOffer(flow.body()?.links?.nextOffer)
@@ -381,21 +381,47 @@ class UptickManager {
                 }
 
                 // Disclaimer
-                offer.disclaimer?.forEach {
-                    if (it.type == "text") {
-                        val disclaimerTextView = TextView(context).apply {
-                            gravity = Gravity.START
-                            includeFontPadding = false
+                offer.disclaimer?.let { disclaimer ->
+                    val disclaimerTextView = TextView(context).apply {
+                        gravity = Gravity.START
+                        includeFontPadding = false
 
-                            text = it.text
-                            setTextSize(it.attributes?.size)
-                            setTextColor(getTextColor(it.attributes?.appearance) ?: Color.GRAY)
-                            setTextStyle(it.attributes?.emphasis)
-                            setPadding(horizontalPadding, 8.dpToPx(), horizontalPadding, 8.dpToPx())
-                        }
-                        contentContainer.addView(disclaimerTextView)
+                        setTextSize(disclaimer.firstOrNull()?.attributes?.size)
+                        setTextColor(
+                            getTextColor(disclaimer.firstOrNull()?.attributes?.appearance)
+                                ?: Color.GRAY
+                        )
+                        setTextStyle(disclaimer.firstOrNull()?.attributes?.emphasis)
+                        setPadding(horizontalPadding, 8.dpToPx(), horizontalPadding, 8.dpToPx())
                     }
+                    var disclaimerString: CharSequence? = null
+                    disclaimer.forEach {
+                        if (it.type == "text") {
+                            disclaimerString =
+                                android.text.TextUtils.concat(disclaimerString ?: "", it.text)
+                        }
+                        if (it.type == "link") {
+                            it.children?.forEach { children ->
+                                val text = android.text.SpannableString(children.text).apply {
+                                    if (children.type == "text") clickableSpan(
+                                        children.text,
+                                        getTextColor(children.attributes?.appearance)
+                                            ?: Color.parseColor("#6092b4"), false
+                                    ) {
+                                        context?.openLink(it.attributes?.to ?: "")
+                                    }
+                                }
+                                disclaimerString =
+                                    android.text.TextUtils.concat(disclaimerString ?: "", text)
+                            }
+                        }
+                    }
+                    disclaimerTextView.text = disclaimerString
+                    disclaimerTextView.movementMethod =
+                        android.text.method.LinkMovementMethod.getInstance()
+                    contentContainer.addView(disclaimerTextView)
                 }
+
                 val orientationContainer = LinearLayout(context).apply {
                     orientation = if (isTablet) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
                     layoutParams = LinearLayout.LayoutParams(
@@ -446,7 +472,10 @@ class UptickManager {
                         it.children?.let { children ->
                             children.forEach {
                                 val text = android.text.SpannableString(it.text).apply {
-                                    if (it.type == "link") clickableSpan(it.text) {
+                                    if (it.type == "link") clickableSpan(
+                                        it.text,
+                                        getTextColor(it.attributes?.appearance) ?: Color.GRAY
+                                    ) {
                                         context?.openLink(it.attributes?.to ?: "")
                                     }
                                 }
@@ -465,6 +494,9 @@ class UptickManager {
                 container?.let {
                     container?.removeAllViews()
                     it.addView(parentContainer)
+                    response.links.offerEvent?.let { url ->
+                        offerViewed(url)
+                    }
                 }
             } ?: run {
                 container?.removeAllViews()
@@ -502,6 +534,7 @@ class UptickManager {
         return when (color) {
             "accent" -> Color.WHITE
             "subdued" -> Color.parseColor("#585858")
+            "monochrome" -> Color.parseColor("#6092b4")
             else -> null
         }
     }
@@ -515,8 +548,14 @@ class UptickManager {
         if (isTablet) 32.dpToPx() else 16.dpToPx()
 
     private fun handleRenderType(renderType: String) {
-        scope.launch(Dispatchers.Main+coroutineExceptionHandler) {
+        scope.launch(Dispatchers.Main + coroutineExceptionHandler) {
             onRenderTypeReceived(renderType)
+        }
+    }
+
+    private fun offerViewed(url: String) {
+        scope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            network.offerEvent(url)
         }
     }
 }
